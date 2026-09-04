@@ -21,6 +21,15 @@ reference audit, and the analysis.
 
 Planning and infrastructure. No reproduction claim.
 
+## Installing
+
+The package depends on Breeze's `glw/anderson-chamber` branch, declared in `[sources]`, so
+`Pkg.instantiate()` fetches it. To develop against a local Breeze checkout instead:
+
+```julia
+using Pkg; Pkg.develop(path="/path/to/Breeze.jl")
+```
+
 ## Running
 
 ```julia
