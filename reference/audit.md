@@ -23,3 +23,17 @@ from −4 % to +3 %, which is presumably the abscissa of the published figure.
 | Settling | "first-order settling model" | none in `parcels.py`; wall handling via `RBC` | locate in the archive or `process.py`; do not assume |
 | Dependencies | — | pyrcel (constants, thermo), numba.pycc, netCDF4 | freeze in the R0 environment |
 | Wall model | SAM H-M case (Yang et al. 2022) | not in this repository | audit Yang et al. for roughness lengths and stability form |
+
+## From the preprint (arXiv:2210.15766v1, mirrored as `~/anderson_reference/anderson2023_arxiv.txt`)
+
+| Item | Preprint | Code | Consequence |
+|---|---|---|---|
+| Condensation (mass accommodation) coefficient | `ac = 1`; thermal accommodation `aT = 0.96` | `accom = 0.3` (`main_particle-traces.py` → `run.main`) | named sensitivity case; Breeze default follows the code (0.3) |
+| Hygroscopicity | κ = 1 (v1 preprint) | κ = 1.0 | the draft's κ = 1.2 must come from the published GRL version; check |
+| LES mean supersaturation | with cloud (bin microphysics, injected NaCl): s̄ = −2.7 % in the domain (Fig. 1 case); without droplets ≈ +2.5 % "consistent with chamber observations" | — | gate 2 target for the cloud-free chamber: ⟨𝒮⟩ ≈ +2.5 %; the cloudy reference has ⟨𝒮⟩ ≈ −2.7 % |
+| Steady state | "after about 5 min"; 1 h total; fields every 0.5 s | files from step 90000 (30 min) | our spin-up must be checked, not assumed |
+| Lagrangian statistics | τₛ ≈ 7.5 s along the parcel ensemble; τ_evap = 9.9 s at s̄ = −1.2 % and 120 s at −0.2 % | — | targets for the L1 cloudy gate |
+| Trajectories | passive tracers, SciPy IVP solver with max step 0.1 s on linear 4-D interpolation | `solve_ivp` default RK45 | second-order integrator (A1c) desirable |
+| Settling | Stokes decay of number per parcel available, but NOT applied when computing the activated fraction | none in `parcels.py` | ignore settling for the activation curves |
+| Supersaturation | `s = e/e_sat − 1`, `e = p q/(0.622 + q)`, Magnus `e_sat`, p in kPa | fixed P = 1000 hPa in `parcels.py` | Breeze uses its own thermodynamics at the reference pressure |
+| Sweep and curves | activated fraction after 60 s vs s̄; uniform = step at s_crit; fluctuating = `D ≥ D_crit`; instantaneous = `s ≥ s_crit` (τ_evap = 0) | 19 targets −4 %…+5 %; figure script 15 targets −4 %…+3 % | matches the online replicas |
