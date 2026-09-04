@@ -1,7 +1,13 @@
 # Reference audit: Anderson et al. (2023)
 
 Live code `lfierce2/LagrangianDroplets` read at commit `5ca80674d173481bc1c51b96d2f2d5c10a728ee9`
-(2026-09-03). The archived Zenodo release (10.5281/zenodo.7259494) is still to be checked.
+(2026-09-03). The archived Zenodo release v1.0.0 (10.5281/zenodo.7259494, commit `488336d`,
+mirrored in `~/anderson_reference/zenodo/`) was diffed against it on 2026-09-04: `parcels.py`,
+`microphysics.py`, and `run.py` differ only in file headers and one directory-creation line, so
+the archive and the live code are physically identical. In particular both use κ = 1.0
+(`main_particle-traces.py`, "0.65 better?"), a 130 nm dry diameter, N = 10⁶ m⁻³, and the 19
+target means from −4 % to +5 %; the archived figure script `main_make-figs.py` plots 15 targets
+from −4 % to +3 %, which is presumably the abscissa of the published figure.
 
 | Item | Paper / draft | Live code | Consequence |
 |---|---|---|---|
