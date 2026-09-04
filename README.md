@@ -68,6 +68,22 @@ using Pkg; Pkg.develop(path="/path/to/Breeze.jl")
 ## Running
 
 ```julia
-julia --project=. scripts/run_droplets.jl 64 64 32 5 10000 parity
+julia --project=. scripts/run_windows.jl 64 64 32 25 3 10000 parity
 ```
-runs the parity-resolution chamber for five minutes with 10⁴ droplets.
+spins the chamber up for 25 minutes and then runs three 60 s windows of Anderson's experiment
+with 10⁴ droplets, writing `parity_activation.jld2` (activation curves, Lagrangian samples,
+chamber statistics) and `parity_profiles.jld2` (horizontal-mean profiles). Environment
+variables: `WALL_C` (wall transfer coefficient, default the `PiChamber` value), `DT` (time
+step, 0.02 s), `HOST=bulk` with `HOST_TAU` (warm-only one-moment host microphysics with the
+given relaxation time in seconds). `scripts/gpu.sbatch` wraps any script for Slurm.
+
+Analysis: `analysis/activation_curve.jl` (curves and bands of one run),
+`analysis/supersaturation_statistics.jl` (Lagrangian PDF, autocorrelation, correlation time),
+`analysis/compare_curves.jl online.jld2 reference.jld2 out.png` (online against the replay),
+`analysis/coefficient_sweep.jl reference.jld2 out.png C=file.jld2 ...`,
+`analysis/reference_statistics.jl` (Eulerian statistics of the mirrored SAM fields), and
+`analysis/reference_trajectories.jl N windows first_step out.jld2` (the replay of Anderson's
+experiment through the SAM fields with Breeze's droplet physics).
+
+Tests: `julia --project=. test/runtests.jl` (`Pkg.test()` currently fails inside Pkg with the
+git-sourced Breeze dependency).
