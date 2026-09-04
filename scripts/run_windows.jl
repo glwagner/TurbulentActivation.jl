@@ -64,13 +64,22 @@ for n in 1:n_windows
     record(sim) = (a = replica_activation(droplets); push!(times, time(sim) - t₀);
                    push!(fluc, collect(a.fluctuating)); push!(unif, collect(a.uniform)); push!(inst, collect(a.instantaneous)))
     add_callback!(simulation, record, TimeInterval(1), name=:record)
+    # Lagrangian supersaturation and diameter of the first `n_sampled` droplets every 0.5 s, for the
+    # supersaturation PDF, its autocorrelation time, and example trajectories
+    n_sampled = min(N, 500)
+    sample_times = Float64[]; 𝒮_samples = Vector{Vector{Float64}}(); D_samples = Vector{Vector{Float64}}()
+    sample(sim) = (push!(sample_times, time(sim) - t₀); push!(𝒮_samples, Array(droplets.𝒮)[1:n_sampled]);
+                   push!(D_samples, sqrt.(Array(droplets.D²)[1:n_sampled])))
+    add_callback!(simulation, sample, TimeInterval(0.5), name=:sample)
     simulation.stop_time = t₀ + window
     run!(simulation)
     delete!(simulation.callbacks, :record)
+    delete!(simulation.callbacks, :sample)
     a = replica_activation(droplets)
     results["window_$n"] = Dict("start" => t₀, "S0" => 𝒮₀, "fluctuating" => collect(a.fluctuating),
                                 "uniform" => collect(a.uniform), "instantaneous" => collect(a.instantaneous))
-    series["window_$n"] = Dict("times" => times, "fluctuating" => reduce(hcat, fluc), "uniform" => reduce(hcat, unif), "instantaneous" => reduce(hcat, inst))
+    series["window_$n"] = Dict("times" => times, "fluctuating" => reduce(hcat, fluc), "uniform" => reduce(hcat, unif), "instantaneous" => reduce(hcat, inst),
+                               "sample_times" => sample_times, "S" => reduce(hcat, 𝒮_samples), "D" => reduce(hcat, D_samples))
     @printf("window %d done: target  fluctuating  uniform  instantaneous\n", n)
     for (m, t) in enumerate(targets)
         @printf("   %+.3f   %.3f   %.3f   %.3f\n", t, a.fluctuating[m], a.uniform[m], a.instantaneous[m])
