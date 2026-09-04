@@ -50,14 +50,17 @@ u, v, w = model.velocities
 function progress(sim)
     compute!(ℋ)
     s = droplet_statistics(droplets)
-    @printf("iter %6d  t = %7.2f s  max|w| = %.3f  ⟨ℋ⟩ = %.3f  droplets: ⟨𝒮⟩ = %+.4f  σ(𝒮) = %.4f  active = %.3f  wall = %s\n",
-            iteration(sim), time(sim), maximum(abs, w), mean(ℋ),
+    @printf("iter %6d  t = %7.2f s  Δt = %.3f  max|w| = %.3f  ⟨ℋ⟩ = %.3f  droplets: ⟨𝒮⟩ = %+.4f  σ(𝒮) = %.4f  active = %.3f  wall = %s\n",
+            iteration(sim), time(sim), sim.Δt, maximum(abs, w), mean(ℋ),
             s.mean_supersaturation, s.std_supersaturation, s.activated_fraction, prettytime(sim.run_wall_time))
 end
 
 # Spin-up
 simulation = Simulation(model; Δt, stop_time=spinup_minutes * minutes)
 Oceananigans.Diagnostics.erroring_NaNChecker!(simulation)
+# Adaptive time step: CFL (summed over the three directions, 0.7) and MAX_DT (0.05 s); CFL=0 keeps Δt fixed
+cfl = parse(Float64, get(ENV, "CFL", "0.7"))
+cfl > 0 && conjure_time_step_wizard!(simulation; cfl, max_Δt=parse(Float64, get(ENV, "MAX_DT", "0.05")))
 add_callback!(simulation, progress, TimeInterval(30))
 # DIAG=1 prints the extrema of the state every second, to catch a blow-up before it throws
 if get(ENV, "DIAG", "0") == "1"

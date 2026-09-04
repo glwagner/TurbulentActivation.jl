@@ -51,6 +51,9 @@ initialize_chamber!(model, chamber; temperature, relative_humidity)
 
 simulation = Simulation(model; Δt, stop_time=stop_minutes * minutes)
 Oceananigans.Diagnostics.erroring_NaNChecker!(simulation)
+# Adaptive time step: CFL (summed over the three directions, 0.7) and MAX_DT (0.05 s); CFL=0 keeps Δt fixed
+cfl = parse(Float64, get(ENV, "CFL", "0.7"))
+cfl > 0 && conjure_time_step_wizard!(simulation; cfl, max_Δt=parse(Float64, get(ENV, "MAX_DT", "0.05")))
 
 ℋ = RelativeHumidityField(model)
 u, v, w = model.velocities
@@ -58,8 +61,8 @@ u, v, w = model.velocities
 function progress(sim)
     compute!(ℋ)
     s = droplet_statistics(droplets)
-    @printf("iter %6d  t = %7.2f s  max|w| = %.3f  ⟨ℋ⟩ = %.3f  max ℋ = %.3f  droplets: ⟨𝒮⟩ = %+.4f  σ(𝒮) = %.4f  ⟨D⟩ = %.2f μm  active = %.3f  wall = %s\n",
-            iteration(sim), time(sim), maximum(abs, w), mean(ℋ), maximum(ℋ),
+    @printf("iter %6d  t = %7.2f s  Δt = %.3f  max|w| = %.3f  ⟨ℋ⟩ = %.3f  max ℋ = %.3f  droplets: ⟨𝒮⟩ = %+.4f  σ(𝒮) = %.4f  ⟨D⟩ = %.2f μm  active = %.3f  wall = %s\n",
+            iteration(sim), time(sim), sim.Δt, maximum(abs, w), mean(ℋ), maximum(ℋ),
             s.mean_supersaturation, s.std_supersaturation, 1e6 * s.mean_diameter, s.activated_fraction,
             prettytime(sim.run_wall_time))
 end
