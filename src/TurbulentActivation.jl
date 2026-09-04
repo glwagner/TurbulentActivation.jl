@@ -9,6 +9,7 @@ using CloudMicrophysics.Parameters: Microphysics1MParams
 using Breeze
 using Breeze.BoundaryConditions: BulkDrag, BulkSensibleHeatFlux, BulkVaporFlux
 using Breeze.Microphysics: ConstantRateCondensateFormation, NonEquilibriumCloudFormation
+using Breeze.AtmosphereModels: SpeciesBorrowing
 using Oceananigans
 using Oceananigans.Architectures: on_architecture
 using Oceananigans.Grids: xnodes, ynodes, znodes

@@ -164,5 +164,8 @@ function chamber_microphysics(FT = Float64; relaxation_time = 5)
     categories = ext.one_moment_cloud_microphysics_categories(FT; parameters)
     liquid = ConstantRateCondensateFormation(FT(1 / relaxation_time))
     cloud_formation = NonEquilibriumCloudFormation(liquid, nothing)
-    return ext.OneMomentCloudMicrophysics(FT; cloud_formation, categories)
+    # Advection undershoots leave slightly negative cloud liquid, which the Stokes fall-velocity power
+    # law cannot take; borrow it back from vapor at the same level before the auxiliaries are computed.
+    negative_moisture_correction = SpeciesBorrowing()
+    return ext.OneMomentCloudMicrophysics(FT; cloud_formation, categories, negative_moisture_correction)
 end
