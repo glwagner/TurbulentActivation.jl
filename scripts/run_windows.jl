@@ -42,8 +42,11 @@ host = get(ENV, "HOST", "none")
 relaxation_time = parse(Float64, get(ENV, "HOST_TAU", "28"))
 microphysics = host == "bulk" ? chamber_microphysics(; relaxation_time) :
                host == "twomoment" ? chamber_microphysics(; relaxation_time, scheme=:twomoment,
-                                                          aerosol_number=parse(Float64, get(ENV, "AEROSOL_N", "5e6"))) : nothing
-model = pi_chamber_model(chamber, grid; particles, microphysics)
+                                                          aerosol_number=parse(Float64, get(ENV, "AEROSOL_N", "5e6")),
+                                                          dry_radius=parse(Float64, get(ENV, "AEROSOL_R", "65e-9")),
+                                                          hygroscopicity=parse(Float64, get(ENV, "AEROSOL_KAPPA", "1")),
+                                                          geometric_std=parse(Float64, get(ENV, "AEROSOL_SIGMA", "1.5"))) : nothing
+model = pi_chamber_model(chamber, grid; particles, microphysics, bounded_moisture=get(ENV, "BOUNDED", "1") == "1")
 initialize_chamber!(model, chamber; temperature, relative_humidity)
 @info "Anderson windows" chamber aerosol dynamics host arch size=(Nx, Ny, Nz) spinup_minutes n_windows N
 

@@ -148,7 +148,7 @@ closure, the six-wall bulk fluxes of the chamber, and optionally Lagrangian `par
 (a `LagrangianParticles` of droplets) and a host `microphysics`. Extra keyword arguments are
 passed to `AtmosphereModel`.
 """
-function pi_chamber_model(chamber::PiChamber{FT}, grid; particles=nothing, microphysics=nothing, kwargs...) where FT
+function pi_chamber_model(chamber::PiChamber{FT}, grid; particles=nothing, microphysics=nothing, bounded_moisture=true, kwargs...) where FT
     constants = ThermodynamicConstants(FT)
     reference_state = ReferenceState(grid, constants;
                                      surface_pressure = chamber.surface_pressure,
@@ -160,7 +160,7 @@ function pi_chamber_model(chamber::PiChamber{FT}, grid; particles=nothing, micro
     # produce negative mass fractions
     order = chamber.advection_order
     moisture_names = filter(name -> startswith(string(name), "ρq"), (:ρqᵛ, prognostic_field_names(microphysics)...))
-    bounded = WENO(order=order, bounds=(0, 1))
+    bounded = bounded_moisture ? WENO(order=order, bounds=(0, 1)) : WENO(order=order)
     scalar_advection = merge((; ρθ = WENO(order=order)),
                              NamedTuple{moisture_names}(ntuple(_ -> bounded, length(moisture_names))))
     return AtmosphereModel(grid; dynamics, boundary_conditions, momentum_advection=WENO(order=order),
