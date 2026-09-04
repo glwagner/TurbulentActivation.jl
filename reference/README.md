@@ -11,3 +11,17 @@ the repository in `~/anderson_reference/` (not committed):
 - `zenodo/` the archived code release 10.5281/zenodo.7259494
 
 Checksums (`sha256sum`) are recorded in `checksums.txt` once the mirror is complete.
+
+## Eulerian statistics of the reference fields
+
+`analysis/reference_statistics.jl` over 361 snapshots (every tenth, steps 90000–180000), with
+Anderson's supersaturation definition (Magnus `e_sat`, `e = p q / (0.622 + q)`, p from the
+snapshot's pressure profile):
+
+| quantity | whole box | away from the walls (2 cells) |
+|---|---:|---:|
+| ⟨S⟩ | +0.52 % | +0.71 % |
+| σ(S) | 1.94 % | 1.23 % |
+| σ(T) | 0.85 K | |
+| σ(qᵥ) | 0.72 g kg⁻¹ | |
+| ⟨qₙ⟩ (condensate) | 0.056 g kg⁻¹, present everywhere | |
