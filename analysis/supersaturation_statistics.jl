@@ -27,7 +27,7 @@ ax1 = Axis(fig[1, 1]; xlabel="supersaturation (%)", ylabel="probability density"
 ax2 = Axis(fig[1, 2]; xlabel="lag (s)", ylabel="autocorrelation", title="Lagrangian autocorrelation of 𝒮′")
 ax3 = Axis(fig[2, 1:2]; xlabel="time in window (s)", ylabel="𝒮 (%)", title="Three droplet trajectories (first window)")
 for (i, w) in enumerate(windows)
-    S = series[w]["S"]'                               # (droplets, times)
+    S = series[w]["S"]                                # (droplets, times)
     t = series[w]["sample_times"]
     Δt = length(t) > 1 ? t[2] - t[1] : 0.5
     hist!(ax1, 100 .* vec(S); bins=80, normalization=:pdf, color=(:dodgerblue3, 0.25))

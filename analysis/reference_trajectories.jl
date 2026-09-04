@@ -131,7 +131,7 @@ for w in 1:n_windows
     instantaneous = [count(n -> instant[n][m], 1:N) / N for m in 1:M]
     results["window_$w"] = Dict("step" => step₀, "fluctuating" => fluctuating, "uniform" => uniform, "instantaneous" => instantaneous,
                                 "S0" => mean(S), "true_activated" => count(≥(Dᶜ^2), D²) / N)
-    series["window_$w"] = Dict("sample_times" => collect(0:0.5:60), "S" => Sₜ')
+    series["window_$w"] = Dict("sample_times" => collect(0:0.5:60), "S" => Sₜ)   # (droplets, times)
     @printf("window %d: ⟨S⟩ = %+.3f %%  σ(S) = %.3f %%  true active %.3f\n   target  fluctuating  uniform  instantaneous\n",
             w, 100mean(Sₜ), 100std(Sₜ), results["window_$w"]["true_activated"])
     for m in 1:M
