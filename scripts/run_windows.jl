@@ -52,6 +52,15 @@ end
 simulation = Simulation(model; Δt, stop_time=spinup_minutes * minutes)
 Oceananigans.Diagnostics.erroring_NaNChecker!(simulation)
 add_callback!(simulation, progress, TimeInterval(30))
+# DIAG=1 prints the extrema of the state every second, to catch a blow-up before it throws
+if get(ENV, "DIAG", "0") == "1"
+    T = model.temperature
+    qᶜˡ = get(model.microphysical_fields, :qᶜˡ, nothing)
+    diag(sim) = @printf("t = %7.2f  T ∈ [%.2f, %.2f]  max|u,v,w| = %.3f %.3f %.3f  qᶜˡ ∈ [%.2e, %.2e]  min qᵛ = %.2e\n",
+                        time(sim), minimum(T), maximum(T), maximum(abs, u), maximum(abs, v), maximum(abs, w),
+                        isnothing(qᶜˡ) ? 0 : minimum(qᶜˡ), isnothing(qᶜˡ) ? 0 : maximum(qᶜˡ), minimum(model.microphysical_fields.qᵛ))
+    add_callback!(simulation, diag, TimeInterval(1))
+end
 T = model.temperature
 qᵛ = model.microphysical_fields.qᵛ
 simulation.output_writers[:profiles] = JLD2Writer(model, (; T=Average(T, dims=(1, 2)), TT=Average(T^2, dims=(1, 2)),

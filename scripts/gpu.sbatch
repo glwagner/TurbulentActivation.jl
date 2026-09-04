@@ -11,4 +11,4 @@
 # Usage: sbatch scripts/gpu.sbatch scripts/run_droplets.jl 64 64 32 5 10000 parity
 mkdir -p $HOME/TurbulentActivation.jl/runs && cd $HOME/TurbulentActivation.jl/runs
 script=$1; shift
-julia --startup-file=no --project=$HOME/TurbulentActivation.jl $HOME/TurbulentActivation.jl/$script "$@"
+julia --startup-file=no $JULIA_FLAGS --project=$HOME/TurbulentActivation.jl $HOME/TurbulentActivation.jl/$script "$@"
