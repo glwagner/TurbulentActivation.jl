@@ -9,12 +9,17 @@ online = load(ARGS[1])["results"]
 reference = load(ARGS[2])["results"]
 output = length(ARGS) ≥ 3 ? ARGS[3] : "comparison.png"
 
-curves(results) = begin
+function curves(results)
     targets = 100 .* results["targets"]
-    windows = [k for k in keys(results) if startswith(k, "window_")]
-    stack(kind) = reduce(hcat, [results[w][kind] for w in windows])
-    (; targets, windows, Dict(kind => (mean(stack(kind), dims=2)[:], length(windows) > 1 ? std(stack(kind), dims=2)[:] : zeros(length(targets))))
-                              for kind in ("fluctuating", "uniform", "instantaneous"))...)
+    windows = sort([k for k in keys(results) if startswith(k, "window_")])
+    function statistics(kind)
+        A = reduce(hcat, [results[w][kind] for w in windows])
+        m = mean(A, dims=2)[:]
+        s = length(windows) > 1 ? std(A, dims=2)[:] : zeros(length(targets))
+        return (m, s)
+    end
+    return (; targets, windows, fluctuating = statistics("fluctuating"),
+              uniform = statistics("uniform"), instantaneous = statistics("instantaneous"))
 end
 o = curves(online); r = curves(reference)
 @info "comparison" online_windows=length(o.windows) reference_windows=length(r.windows)
