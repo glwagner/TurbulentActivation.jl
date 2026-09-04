@@ -15,11 +15,11 @@ prefix = length(ARGS) ≥ 7 ? ARGS[7] : "windows"
 window = 60.0
 arch = CUDA.functional() ? GPU() : CPU()
 
-# WALL_MODEL=loglaw (default) uses the log-law wall model with roughness length ROUGHNESS (1e-3 m)
+# WALL_MODEL=loglaw (default) uses the log-law wall model with roughness length ROUGHNESS (1.25e-3 m)
 # and the Monin–Obukhov stability correction unless STABILITY=0; WALL_MODEL=constant uses the bulk
 # coefficient WALL_C (2e-2) with WALL_C_SIDE on the side walls. DT is the time step (0.02 s).
 if get(ENV, "WALL_MODEL", "loglaw") == "loglaw"
-    coefficient = log_law_coefficient(; roughness_length=parse(Float64, get(ENV, "ROUGHNESS", "1e-3")),
+    coefficient = log_law_coefficient(; roughness_length=parse(Float64, get(ENV, "ROUGHNESS", "1.25e-3")),
                                         stability=get(ENV, "STABILITY", "1") == "1")
     chamber = PiChamber(; transfer_coefficient=coefficient, side_transfer_coefficient=coefficient)
 else
