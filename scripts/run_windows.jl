@@ -39,7 +39,10 @@ dynamics = ReplicaDynamics(targets)
 particles = LagrangianParticles(droplets; dynamics)
 # HOST=bulk runs the cloudy chamber with the warm-only one-moment host (relaxation time HOST_TAU s)
 host = get(ENV, "HOST", "none")
-microphysics = host == "bulk" ? chamber_microphysics(; relaxation_time=parse(Float64, get(ENV, "HOST_TAU", "5"))) : nothing
+relaxation_time = parse(Float64, get(ENV, "HOST_TAU", "28"))
+microphysics = host == "bulk" ? chamber_microphysics(; relaxation_time) :
+               host == "twomoment" ? chamber_microphysics(; relaxation_time, scheme=:twomoment,
+                                                          aerosol_number=parse(Float64, get(ENV, "AEROSOL_N", "5e6"))) : nothing
 model = pi_chamber_model(chamber, grid; particles, microphysics)
 initialize_chamber!(model, chamber; temperature, relative_humidity)
 @info "Anderson windows" chamber aerosol dynamics host arch size=(Nx, Ny, Nz) spinup_minutes n_windows N

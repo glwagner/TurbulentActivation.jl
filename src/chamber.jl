@@ -159,7 +159,7 @@ function pi_chamber_model(chamber::PiChamber{FT}, grid; particles=nothing, micro
     # species (vapor and the host's prognostic condensate), so that advection undershoot cannot
     # produce negative mass fractions
     order = chamber.advection_order
-    moisture_names = (:ρqᵛ, prognostic_field_names(microphysics)...)
+    moisture_names = filter(name -> startswith(string(name), "ρq"), (:ρqᵛ, prognostic_field_names(microphysics)...))
     bounded = WENO(order=order, bounds=(0, 1))
     scalar_advection = merge((; ρθ = WENO(order=order)),
                              NamedTuple{moisture_names}(ntuple(_ -> bounded, length(moisture_names))))
@@ -188,36 +188,40 @@ end
 #####
 
 """
-    chamber_microphysics(FT = Float64; relaxation_time = 5)
+    chamber_microphysics(FT = Float64; relaxation_time = 28, scheme = :onemoment,
+                         aerosol_number = 5e6, dry_radius = 65e-9, hygroscopicity = 1, geometric_std = 1.5)
 
-A warm-only bulk host microphysics for the cloudy chamber: Breeze's one-moment scheme with
-prognostic vapor, cloud liquid formed by relaxation toward saturation on `relaxation_time`
-(seconds), and every rain process switched off, so that the supersaturation is regulated by
-condensation on the cloud but no drizzle forms. The relaxation time stands in for the phase
-relaxation time of the droplet population, `1 / (4π Dᵛ N r̄)`; it is a sensitivity parameter
-until a supersaturation-driven chamber scheme replaces it.
+A warm-only bulk host microphysics for the cloudy chamber. `scheme = :onemoment` is Breeze's
+one-moment scheme with every rain process switched off; `scheme = :twomoment` is the
+Seifert–Beheng two-moment scheme with Abdul-Razzak–Ghan activation of a single κ-Köhler
+aerosol mode (`aerosol_number` per m³, `dry_radius`, `geometric_std`, `hygroscopicity`),
+prognostic droplet number, and sedimentation. In both, cloud liquid forms by relaxation
+toward saturation on `relaxation_time` (seconds; Breeze multiplies it by the latent-heat
+factor Γ ≈ 2.5, so 28 s reproduces the 72 s condensation-rate regression of the reference
+SAM fields); the droplet number does not enter the condensation rate in either scheme.
 """
-function chamber_microphysics(FT = Float64; relaxation_time = 5)
+function chamber_microphysics(FT = Float64; relaxation_time = 28, scheme = :onemoment,
+                              aerosol_number = 5e6, dry_radius = 65e-9, hygroscopicity = 1,
+                              geometric_std = 1.5, molar_mass = 0.058)
     ext = Base.get_extension(Breeze, :BreezeCloudMicrophysicsExt)
-    parameters = Microphysics1MParams(FT;
-                                      rain_autoconversion = nothing,
-                                      rain_condensation_evaporation = nothing,
-                                      cloud_liquid_rain_accretion = nothing,
-                                      cloud_ice_formation = nothing,
-                                      cloud_ice_melt = nothing,
-                                      snow_autoconversion = nothing,
-                                      snow_deposition_sublimation = nothing,
-                                      snow_melt = nothing,
-                                      cloud_liquid_snow_accretion = nothing,
-                                      cloud_ice_rain_accretion = nothing,
-                                      cloud_ice_snow_accretion = nothing,
-                                      rain_snow_accretion = nothing)
-    categories = ext.one_moment_cloud_microphysics_categories(FT; parameters)
-    liquid = ConstantRateCondensateFormation(FT(1 / relaxation_time))
-    cloud_formation = NonEquilibriumCloudFormation(liquid, nothing)
-    # Advection undershoots leave slightly negative cloud liquid, which the Stokes fall-velocity power
-    # law cannot take; borrow it back from vapor at the same level before the auxiliaries are computed.
+    cloud_formation = NonEquilibriumCloudFormation(ConstantRateCondensateFormation(FT(1 / relaxation_time)), nothing)
     negative_moisture_correction = SpeciesBorrowing()
+    if scheme == :twomoment
+        # Seifert–Beheng two-moment warm microphysics with Abdul-Razzak–Ghan activation of a single
+        # κ-Köhler aerosol mode (number per m³, dry radius, geometric standard deviation, hygroscopicity)
+        CMAM = CloudMicrophysics.AerosolModel
+        mode = CMAM.Mode_κ(FT(dry_radius), FT(geometric_std), FT(aerosol_number), (FT(1),), (FT(1),), (FT(molar_mass),), (FT(hygroscopicity),))
+        distribution = CMAM.AerosolDistribution((mode,))
+        activation = ext.AerosolActivation(AerosolActivationParameters(FT), distribution, FT(1))
+        categories = ext.two_moment_cloud_microphysics_categories(FT; aerosol_activation=activation)
+        return ext.TwoMomentCloudMicrophysics(FT; cloud_formation, categories, negative_moisture_correction)
+    end
+    parameters = Microphysics1MParams(FT; rain_autoconversion=nothing, rain_condensation_evaporation=nothing,
+                                      cloud_liquid_rain_accretion=nothing, cloud_ice_formation=nothing, cloud_ice_melt=nothing,
+                                      snow_autoconversion=nothing, snow_deposition_sublimation=nothing, snow_melt=nothing,
+                                      cloud_liquid_snow_accretion=nothing, cloud_ice_rain_accretion=nothing,
+                                      cloud_ice_snow_accretion=nothing, rain_snow_accretion=nothing)
+    categories = ext.one_moment_cloud_microphysics_categories(FT; parameters)
     return ext.OneMomentCloudMicrophysics(FT; cloud_formation, categories, negative_moisture_correction)
 end
 

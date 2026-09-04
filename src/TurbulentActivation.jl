@@ -6,7 +6,7 @@ export PiChamber, pi_chamber_grid, pi_chamber_boundary_conditions, pi_chamber_mo
        AndersonDroplet, anderson_targets, seed_replica_droplets, reset_window!, ReplicaDynamics, replica_activation
 
 using CloudMicrophysics
-using CloudMicrophysics.Parameters: Microphysics1MParams
+using CloudMicrophysics.Parameters: Microphysics1MParams, AerosolActivationParameters
 using Breeze
 using Breeze.BoundaryConditions: BulkDrag, BulkSensibleHeatFlux, BulkVaporFlux, PolynomialCoefficient, FittedStabilityFunction
 using Breeze.Microphysics: ConstantRateCondensateFormation, NonEquilibriumCloudFormation
