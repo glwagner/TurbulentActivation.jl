@@ -9,18 +9,22 @@ N = length(ARGS) ≥ 5 ? parse(Int, ARGS[5]) : 1000
 prefix = length(ARGS) ≥ 6 ? ARGS[6] : "droplets"
 arch = CUDA.functional() ? GPU() : CPU()
 
-chamber = PiChamber()
+# Environment overrides as in run_windows.jl: WALL_C, DT, HOST=bulk with HOST_TAU, PARTICLES=0 for none
+chamber = PiChamber(; transfer_coefficient=parse(Float64, get(ENV, "WALL_C", string(PiChamber().transfer_coefficient))))
+Δt = parse(Float64, get(ENV, "DT", "0.02"))
+host = get(ENV, "HOST", "none")
+microphysics = host == "bulk" ? chamber_microphysics(; relaxation_time=parse(Float64, get(ENV, "HOST_TAU", "5"))) : nothing
 grid = pi_chamber_grid(chamber, arch; size=(Nx, Ny, Nz))
 aerosol = anderson_aerosol()
 relative_humidity = 0.8
 temperature = (chamber.bottom_temperature + chamber.top_temperature) / 2
 droplets = seed_droplets(aerosol, grid, N; temperature, relative_humidity, rng=MersenneTwister(1234))
-particles = LagrangianParticles(droplets; dynamics=DropletDynamics())
-model = pi_chamber_model(chamber, grid; particles)
+particles = get(ENV, "PARTICLES", "1") == "1" ? LagrangianParticles(droplets; dynamics=DropletDynamics()) : nothing
+model = pi_chamber_model(chamber, grid; particles, microphysics)
 initialize_chamber!(model, chamber; temperature, relative_humidity)
 @info "Pi Chamber with droplets" chamber aerosol arch size=(Nx, Ny, Nz) stop_minutes N
 
-simulation = Simulation(model; Δt=0.02, stop_time=stop_minutes * minutes)
+simulation = Simulation(model; Δt, stop_time=stop_minutes * minutes)
 Oceananigans.Diagnostics.erroring_NaNChecker!(simulation)
 
 ℋ = RelativeHumidityField(model)
