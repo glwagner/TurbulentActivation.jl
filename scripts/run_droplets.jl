@@ -19,7 +19,32 @@ aerosol = anderson_aerosol()
 relative_humidity = 0.8
 temperature = (chamber.bottom_temperature + chamber.top_temperature) / 2
 droplets = seed_droplets(aerosol, grid, N; temperature, relative_humidity, rng=MersenneTwister(1234))
-particles = get(ENV, "PARTICLES", "1") == "1" ? LagrangianParticles(droplets; dynamics=DropletDynamics()) : nothing
+# DEBUG_INTERP=1 wraps the droplet dynamics in a check of the interpolated state after every
+# step: an unphysical temperature, pressure, or vapor fraction at any droplet is reported with
+# the droplet's position and the run stops there.
+struct CheckedDynamics{D}
+    inner :: D
+end
+function (d::CheckedDynamics)(particles, model, Δt)
+    droplets = particles.properties
+    interpolate_to_droplets!(droplets, model)
+    Tmin, Tmax = extrema(droplets.T); pmin, pmax = extrema(droplets.p); qmin, qmax = extrema(droplets.qᵛ)
+    if !(250 < Tmin && Tmax < 320 && 9e4 < pmin && pmax < 1.1e5 && 0 ≤ qmin && qmax < 0.05)
+        Th, ph, qh = Array(droplets.T), Array(droplets.p), Array(droplets.qᵛ)
+        x, y, z = Array(droplets.x), Array(droplets.y), Array(droplets.z)
+        bad = findall(n -> !(250 < Th[n] < 320 && 9e4 < ph[n] < 1.1e5 && 0 ≤ qh[n] < 0.05), eachindex(Th))
+        @printf("INTERPOLATION CHECK FAILED at iteration %d: %d droplets out of range\n", model.clock.iteration, length(bad))
+        for n in bad[1:min(end, 5)]
+            @printf("  droplet %d at (%.6f, %.6f, %.6f): T = %g  p = %g  qᵛ = %g\n", n, x[n], y[n], z[n], Th[n], ph[n], qh[n])
+        end
+        Tf = model.temperature
+        @printf("  temperature field extrema (interior) = %s; halo min/max = %s\n", extrema(interior(Tf)), extrema(parent(Tf)))
+        error("interpolation check failed")
+    end
+    return d.inner(particles, model, Δt)
+end
+dynamics = get(ENV, "DEBUG_INTERP", "0") == "1" ? CheckedDynamics(DropletDynamics()) : DropletDynamics()
+particles = get(ENV, "PARTICLES", "1") == "1" ? LagrangianParticles(droplets; dynamics) : nothing
 model = pi_chamber_model(chamber, grid; particles, microphysics)
 initialize_chamber!(model, chamber; temperature, relative_humidity)
 @info "Pi Chamber with droplets" chamber aerosol arch size=(Nx, Ny, Nz) stop_minutes N
@@ -44,8 +69,10 @@ profiles = (; T=Average(model.temperature, dims=(1, 2)), ℋ=Average(ℋ, dims=(
               ww=Average(@at((Center, Center, Center), w^2), dims=(1, 2)))
 simulation.output_writers[:profiles] = JLD2Writer(model, profiles; filename="$(prefix)_profiles.jld2",
                                                   schedule=TimeInterval(5), overwrite_existing=true)
-simulation.output_writers[:particles] = JLD2Writer(model, (; particles=model.particles); filename="$(prefix)_particles.jld2",
-                                                   schedule=TimeInterval(0.5), overwrite_existing=true)
+if !isnothing(model.particles)
+    simulation.output_writers[:particles] = JLD2Writer(model, (; particles=model.particles); filename="$(prefix)_particles.jld2",
+                                                       schedule=TimeInterval(0.5), overwrite_existing=true)
+end
 run!(simulation)
 println(droplet_statistics(droplets))
 println("DROPLETS OK")
