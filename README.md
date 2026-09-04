@@ -55,8 +55,8 @@ the neutral log-law value 6 × 10⁻³ gives fluctuations three times too weak. 
 chamber reproduces the 64 × 64 × 32 statistics at the same settings (`figures/ladder_activation.png`).
 
 Open items: the warm bias (the flux partition between floor, ceiling, and side walls); the
-far tail of the activation curve (0.06 against 0.11 at −2 %); a GPU domain error in a particle
-kernel that appears only with the cloudy host at Δt = 0.04 s (production uses 0.02 s); the
+far tail of the activation curve (0.06 against 0.11 at −2 %); a numerical instability of the
+cloudy chamber at Δt = 0.04 s (the dry chamber is stable there; production uses 0.02 s); the
 correlation-time definition (Anderson reports 7.5 s where the integral estimator gives 3 s in
 his own fields); second-order particle advection; checkpointing.
 
