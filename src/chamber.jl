@@ -27,7 +27,8 @@ The chamber configuration. Lengths in metres, temperatures in kelvin, pressure i
 - `side_transfer_coefficient`: the coefficient on the four side walls (default: the same). SAM's
   Monin–Obukhov coefficients are enhanced on the unstable floor and ceiling and neutral on the
   side walls, so a smaller side coefficient mimics that partition.
-- `advection_order`: order of the WENO advection of the implicit LES (9)
+- `advection_order`: order of the WENO advection of the implicit LES (5); momentum and ρθ use
+  plain WENO, the moisture species bounds-preserving WENO with bounds (0, 1)
 """
 struct PiChamber{FT, C, CS}
     extent :: NTuple{3, FT}
@@ -52,7 +53,7 @@ function PiChamber(FT = Float64;
                    reference_potential_temperature = 290,
                    transfer_coefficient = log_law_coefficient(FT),
                    side_transfer_coefficient = transfer_coefficient,
-                   advection_order = 9)
+                   advection_order = 5)
 
     C = transfer_coefficient isa Number ? FT(transfer_coefficient) : transfer_coefficient
     Cₛ = side_transfer_coefficient isa Number ? FT(side_transfer_coefficient) : side_transfer_coefficient
@@ -139,7 +140,8 @@ end
 """
     pi_chamber_model(chamber, grid; particles=nothing, microphysics=nothing, kwargs...)
 
-An anelastic `AtmosphereModel` of the chamber on `grid`: WENO implicit LES with no explicit
+An anelastic `AtmosphereModel` of the chamber on `grid`: WENO implicit LES (bounds-preserving on
+the moisture species) with no explicit
 closure, the six-wall bulk fluxes of the chamber, and optionally Lagrangian `particles`
 (a `LagrangianParticles` of droplets) and a host `microphysics`. Extra keyword arguments are
 passed to `AtmosphereModel`.
@@ -151,9 +153,16 @@ function pi_chamber_model(chamber::PiChamber{FT}, grid; particles=nothing, micro
                                      potential_temperature = chamber.reference_potential_temperature)
     dynamics = AnelasticDynamics(reference_state)
     boundary_conditions = pi_chamber_boundary_conditions(chamber)
-    advection = WENO(order=chamber.advection_order)
-    return AtmosphereModel(grid; dynamics, boundary_conditions, advection, particles, microphysics,
-                           thermodynamic_constants=constants, kwargs...)
+    # WENO of the chamber's order on momentum and on ρθ; bounds-preserving WENO on every moisture
+    # species (vapor and the host's prognostic condensate), so that advection undershoot cannot
+    # produce negative mass fractions
+    order = chamber.advection_order
+    moisture_names = (:ρqᵛ, prognostic_field_names(microphysics)...)
+    bounded = WENO(order=order, bounds=(0, 1))
+    scalar_advection = merge((; ρθ = WENO(order=order)),
+                             NamedTuple{moisture_names}(ntuple(_ -> bounded, length(moisture_names))))
+    return AtmosphereModel(grid; dynamics, boundary_conditions, momentum_advection=WENO(order=order),
+                           scalar_advection, particles, microphysics, thermodynamic_constants=constants, kwargs...)
 end
 
 """
