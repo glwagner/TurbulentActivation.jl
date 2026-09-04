@@ -26,7 +26,11 @@ advected and grown online, and every droplet carries Anderson's counterfactual r
 target mean supersaturations. The first parity-resolution run (64 × 64 × 32, three 60 s
 windows, chamber not yet stationary) reproduces the form of Anderson et al.'s Figure 2c:
 
-![Activated fraction after 60 s versus target mean supersaturation](figures/parity_v1_activation.png)
+![Activated fraction after 60 s versus target mean supersaturation](figures/parity_long_activation.png)
+
+(Near-stationary dry chamber after a 25 min spin-up, five 60 s windows, 10⁴ droplets; the
+chamber's own mean supersaturation is −1.1 % with a spread of 0.65 %, against a reference
+spread of 1.9 % in the SAM fields, so magnitudes are not yet comparable.)
 
 Open items: a stationary chamber and its cloud-free mean supersaturation against the
 reported +2.5 %; a condensation sink (the warm-only one-moment host is wired in; a
