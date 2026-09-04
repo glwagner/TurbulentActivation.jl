@@ -19,42 +19,46 @@ reference audit, and the analysis.
 
 ## Status
 
-Field parity with the reference LES reached for the one-way experiment; no reproduction
-claim against the paper's numbers yet.
+Field parity with the reference LES reached for the one-way experiment, with a physical wall
+model and the reference's own condensation sink; no reproduction claim against the paper's
+numbers yet.
 
 The chamber (six-wall bulk fluxes, WENO(9) implicit LES) convects, 10⁴ κ-Köhler droplets are
 advected and grown online, and every droplet carries Anderson's counterfactual replicas for 19
 target mean supersaturations. The same droplet physics and the same replica construction are
 also replayed offline through Anderson's SAM fields (`analysis/reference_trajectories.jl`),
-which is the reference the online chamber is judged against. With the wall transfer
-coefficient at 2 × 10⁻² (64 × 64 × 32, 25 min spin-up, three 60 s windows) the online
-curves match the replay to within window scatter:
+which is the reference the online chamber is judged against.
 
-![Online chamber versus replay through the SAM fields](figures/online_C2e-2_vs_reference_activation.png)
+Two quantities were calibrated from the reference fields themselves. The condensation rate in
+the SAM snapshots correlates at 0.96 with the local supersaturation excess and gives a phase
+relaxation time of 72 s (`analysis/reference_condensation.jl`), which the chamber's warm-only
+one-moment host reproduces with `relaxation_time = 28` (Breeze's rate carries the latent-heat
+factor Γ ≈ 2.5). The wall model is a log law with the Monin–Obukhov stability correction on the
+floor and ceiling and neutral side walls (`log_law_coefficient`), and a 1 mm roughness length
+gives, at 64 × 64 × 32 with a 15 min spin-up and three 60 s windows:
 
-Online chamber: mean supersaturation +1.4 %, Lagrangian spread 1.6–1.8 %, correlation time
-3.7–3.9 s. Replay through the reference fields: +0.63 %, 1.85–1.96 %, 2.9–3.1 s. Activated
-fraction after 60 s (fluctuating / uniform / instantaneous) at a target mean of −1 %:
-0.33–0.42 / 0 / 0.16–0.27 online against 0.355 / 0 / 0.165 in the replay; at 0 %:
-0.80–0.83 / 0 / 0.59–0.63 against 0.85 / 0 / 0.51.
+| quantity | Breeze chamber | reference SAM fields |
+|---|---:|---:|
+| interior spread of 𝒮 | 1.23 % | 1.23 % |
+| spread of 𝒮 over the box | 1.82 % | 1.94 % |
+| σ(T), σ(qᵛ) | 0.87 K, 0.69 g kg⁻¹ | 0.85 K, 0.72 g kg⁻¹ |
+| mean 𝒮, interior | +0.48 % | +0.71 % |
+| mean T | 288.9 K | 287.6 K |
+| activated fraction after 60 s at a −1 % target (fluctuating) | 0.27–0.33 | 0.355 |
+| at 0 % (fluctuating / instantaneous) | 0.80–0.83 / 0.59–0.60 | 0.85 / 0.51 |
 
-The wall transfer coefficient is the lever: with the neutral log-law value 6 × 10⁻³ the
-chamber is too dry and too quiet (mean −1.1 %, spread 0.6 %) and the enhancement at −1 % is
-0.06. The reference near-wall cells (bottom 1.2 K above the interior, top 1.1 K below,
-against 0.3 K and 0.2 K in the weak-flux chamber) showed that the SAM wall fluxes are 4–5×
-stronger, consistent with Yang et al. (2022): Monin–Obukhov fluxes on all six walls whose
-magnitude depends on the grid spacing (see `reference/audit.md`).
+![Wall models against the reference replay](figures/wall_model_activation.png)
 
-The sweep brackets the coefficient: 6 × 10⁻³ is far too weak, 4 × 10⁻² too strong (spread
-2.7–3.0 %, enhancement at −1 % of 0.60–0.63), and 2 × 10⁻² is the `PiChamber` default.
+The residual is a 1.3 K warm bias of the mean temperature. A constant coefficient of 2 × 10⁻²
+reproduces the fluctuations equally well but leaves the mean supersaturation near zero, and
+the neutral log-law value 6 × 10⁻³ gives fluctuations three times too weak. The 128 × 128 × 64
+chamber reproduces the 64 × 64 × 32 statistics at the same settings (`figures/ladder_activation.png`).
 
-![Coefficient sweep against the reference replay](figures/coefficient_sweep_activation.png)
-
-Open items: the cloud-free mean supersaturation (+1.4 % against the reported +2.5 %; a
-4 × 10⁻² run brackets it); the cloudy chamber at the calibrated coefficient (the warm-only
-one-moment host is wired in; a supersaturation-driven chamber scheme is planned in Breeze);
-the correlation-time definition (Anderson reports 7.5 s); second-order particle advection;
-checkpointing; and the resolution ladder.
+Open items: the warm bias (the flux partition between floor, ceiling, and side walls); the
+far tail of the activation curve (0.06 against 0.11 at −2 %); a GPU domain error in a particle
+kernel that appears only with the cloudy host at Δt = 0.04 s (production uses 0.02 s); the
+correlation-time definition (Anderson reports 7.5 s where the integral estimator gives 3 s in
+his own fields); second-order particle advection; checkpointing.
 
 ## Installing
 

@@ -10,7 +10,7 @@ prefix = length(ARGS) ≥ 6 ? ARGS[6] : "droplets"
 arch = CUDA.functional() ? GPU() : CPU()
 
 # Environment overrides as in run_windows.jl: WALL_C, DT, HOST=bulk with HOST_TAU, PARTICLES=0 for none
-chamber = PiChamber(; transfer_coefficient=parse(Float64, get(ENV, "WALL_C", string(PiChamber().transfer_coefficient))))
+chamber = haskey(ENV, "WALL_C") ? PiChamber(; transfer_coefficient=parse(Float64, ENV["WALL_C"])) : PiChamber()
 Δt = parse(Float64, get(ENV, "DT", "0.02"))
 host = get(ENV, "HOST", "none")
 microphysics = host == "bulk" ? chamber_microphysics(; relaxation_time=parse(Float64, get(ENV, "HOST_TAU", "5"))) : nothing

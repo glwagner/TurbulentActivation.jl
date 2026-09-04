@@ -6,7 +6,7 @@ using JLD2, CairoMakie, Statistics
 
 reference = load(ARGS[1])["results"]
 output = ARGS[2]
-runs = [(label = split(a, "=")[1], results = load(split(a, "=")[2])["results"]) for a in ARGS[3:end]]
+runs = [(label = rsplit(a, "="; limit=2)[1], results = load(rsplit(a, "="; limit=2)[2])["results"]) for a in ARGS[3:end]]
 
 function mean_curve(results, kind)
     windows = sort([k for k in keys(results) if startswith(k, "window_")])

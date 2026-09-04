@@ -15,15 +15,15 @@ prefix = length(ARGS) ≥ 7 ? ARGS[7] : "windows"
 window = 60.0
 arch = CUDA.functional() ? GPU() : CPU()
 
-# WALL_C overrides the bulk transfer coefficient of the wall laws (WALL_C_SIDE that of the side walls);
-# WALL_MODEL=loglaw uses the log-law wall model with roughness length ROUGHNESS (m) and the
-# Monin–Obukhov stability correction unless STABILITY=0; DT the time step (0.02 s)
-if get(ENV, "WALL_MODEL", "constant") == "loglaw"
+# WALL_MODEL=loglaw (default) uses the log-law wall model with roughness length ROUGHNESS (1e-3 m)
+# and the Monin–Obukhov stability correction unless STABILITY=0; WALL_MODEL=constant uses the bulk
+# coefficient WALL_C (2e-2) with WALL_C_SIDE on the side walls. DT is the time step (0.02 s).
+if get(ENV, "WALL_MODEL", "loglaw") == "loglaw"
     coefficient = log_law_coefficient(; roughness_length=parse(Float64, get(ENV, "ROUGHNESS", "1e-3")),
                                         stability=get(ENV, "STABILITY", "1") == "1")
     chamber = PiChamber(; transfer_coefficient=coefficient, side_transfer_coefficient=coefficient)
 else
-    transfer_coefficient = parse(Float64, get(ENV, "WALL_C", string(PiChamber().transfer_coefficient)))
+    transfer_coefficient = parse(Float64, get(ENV, "WALL_C", "2e-2"))
     side_transfer_coefficient = parse(Float64, get(ENV, "WALL_C_SIDE", string(transfer_coefficient)))
     chamber = PiChamber(; transfer_coefficient, side_transfer_coefficient)
 end

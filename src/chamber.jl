@@ -13,15 +13,17 @@ The chamber configuration. Lengths in metres, temperatures in kelvin, pressure i
 - `bottom_temperature`, `top_temperature`, `side_temperature`: wall temperatures (299, 280, 285)
 - `side_relative_humidity`: relative humidity of the air in contact with the side walls (0.78);
   the floor and ceiling are water-saturated
-- `surface_pressure`: chamber pressure (101325)
+- `surface_pressure`: chamber pressure (100000, the pressure of the reference SAM fields)
 - `reference_potential_temperature`: potential temperature of the anelastic reference state (290)
-- `transfer_coefficient`: bulk transfer coefficient of the wall laws (2e-2). Calibrated against the
-  replay of Anderson's experiment through the reference SAM fields at 64 × 64 × 32: the neutral
-  log-law value 6e-3 (first cell centre 1.6 cm from the wall, 0.1 mm roughness) gives a chamber
-  whose supersaturation fluctuations are three times too weak, 4e-2 gives fluctuations 50 % too
-  strong, and 2e-2 reproduces the reference activation curves to within window scatter
-  (`analysis/coefficient_sweep.jl`). The reference itself uses Monin–Obukhov fluxes whose
-  magnitude depends on the grid spacing (Yang et al. 2022), so the value belongs to this grid.
+- `transfer_coefficient`: the wall law, a number (a constant bulk coefficient) or a Breeze
+  `PolynomialCoefficient`. The default is [`log_law_coefficient`](@ref) with a 1 mm roughness
+  length: the neutral log-law coefficient at the first cell centre (2.1e-2 for 3.1 cm cells)
+  with the Monin–Obukhov stability enhancement on the floor and ceiling and neutral side
+  walls. Calibrated against the replay of Anderson's experiment through the reference SAM
+  fields (`analysis/`): a constant 6e-3 gives fluctuations three times too weak, a constant
+  2e-2 reproduces the fluctuations but leaves the mean supersaturation near zero, and the
+  1 mm log law reproduces the interior spread, σ(T), σ(qᵛ), the activation curve, and the mean
+  supersaturation, with a 1.3 K warm bias of the mean temperature.
 - `side_transfer_coefficient`: the coefficient on the four side walls (default: the same). SAM's
   Monin–Obukhov coefficients are enhanced on the unstable floor and ceiling and neutral on the
   side walls, so a smaller side coefficient mimics that partition.
@@ -46,9 +48,9 @@ function PiChamber(FT = Float64;
                    top_temperature = 280,
                    side_temperature = 285,
                    side_relative_humidity = 0.78,
-                   surface_pressure = 101325,
+                   surface_pressure = 100000,
                    reference_potential_temperature = 290,
-                   transfer_coefficient = 2e-2,
+                   transfer_coefficient = log_law_coefficient(FT),
                    side_transfer_coefficient = transfer_coefficient,
                    advection_order = 9)
 
