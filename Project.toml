@@ -1,0 +1,32 @@
+name = "TurbulentActivation"
+uuid = "7b7a2f0e-3d7a-4c2b-9a4e-2f9e6e2a1c11"
+authors = ["Gregory L. Wagner <gregory.leclaire.wagner@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Breeze = "660aa2fb-d4c8-4359-a52c-9c057bc511da"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
+Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
+
+[sources]
+Breeze = {path = "/home/greg_aeolus_earth/Breeze-anderson"}
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
+
+[compat]
+CUDA = "5, ~6.0, 6.2"
+JLD2 = "0.5, 0.6"
+Oceananigans = "0.111"
+StructArrays = "0.6, 0.7"
+julia = "1.10"
