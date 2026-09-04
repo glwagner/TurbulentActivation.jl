@@ -15,7 +15,8 @@ prefix = length(ARGS) ≥ 7 ? ARGS[7] : "windows"
 window = 60.0
 arch = CUDA.functional() ? GPU() : CPU()
 
-chamber = PiChamber()
+# WALL_C overrides the bulk transfer coefficient of the wall laws (default 6e-3)
+chamber = PiChamber(; transfer_coefficient=parse(Float64, get(ENV, "WALL_C", "6e-3")))
 grid = pi_chamber_grid(chamber, arch; size=(Nx, Ny, Nz))
 aerosol = anderson_aerosol()
 targets = anderson_targets()
@@ -47,8 +48,14 @@ end
 simulation = Simulation(model; Δt=0.02, stop_time=spinup_minutes * minutes)
 Oceananigans.Diagnostics.erroring_NaNChecker!(simulation)
 add_callback!(simulation, progress, TimeInterval(30))
-simulation.output_writers[:profiles] = JLD2Writer(model, (; T=Average(model.temperature, dims=(1, 2)), ℋ=Average(ℋ, dims=(1, 2)),
-                                                          ww=Average(@at((Center, Center, Center), w^2), dims=(1, 2)));
+T = model.temperature
+qᵛ = model.microphysical_fields.qᵛ
+simulation.output_writers[:profiles] = JLD2Writer(model, (; T=Average(T, dims=(1, 2)), TT=Average(T^2, dims=(1, 2)),
+                                                          qᵛ=Average(qᵛ, dims=(1, 2)), qq=Average(qᵛ^2, dims=(1, 2)),
+                                                          ℋ=Average(ℋ, dims=(1, 2)), ℋℋ=Average(ℋ^2, dims=(1, 2)),
+                                                          ww=Average(@at((Center, Center, Center), w^2), dims=(1, 2)),
+                                                          uu=Average(@at((Center, Center, Center), u^2), dims=(1, 2)),
+                                                          vv=Average(@at((Center, Center, Center), v^2), dims=(1, 2)));
                                                   filename="$(prefix)_profiles.jld2", schedule=TimeInterval(5), overwrite_existing=true)
 run!(simulation)
 
