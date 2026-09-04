@@ -19,24 +19,37 @@ reference audit, and the analysis.
 
 ## Status
 
-Infrastructure complete for the one-way experiment; no reproduction claim yet.
+Field parity with the reference LES reached for the one-way experiment; no reproduction
+claim against the paper's numbers yet.
 
 The chamber (six-wall bulk fluxes, WENO(9) implicit LES) convects, 10⁴ κ-Köhler droplets are
 advected and grown online, and every droplet carries Anderson's counterfactual replicas for 19
-target mean supersaturations. The first parity-resolution run (64 × 64 × 32, three 60 s
-windows, chamber not yet stationary) reproduces the form of Anderson et al.'s Figure 2c:
+target mean supersaturations. The same droplet physics and the same replica construction are
+also replayed offline through Anderson's SAM fields (`analysis/reference_trajectories.jl`),
+which is the reference the online chamber is judged against. With the wall transfer
+coefficient at 2 × 10⁻² (64 × 64 × 32, 25 min spin-up, three 60 s windows) the online
+curves match the replay to within window scatter:
 
-![Activated fraction after 60 s versus target mean supersaturation](figures/parity_long_activation.png)
+![Online chamber versus replay through the SAM fields](figures/online_C2e-2_vs_reference_activation.png)
 
-(Near-stationary dry chamber after a 25 min spin-up, five 60 s windows, 10⁴ droplets; the
-chamber's own mean supersaturation is −1.1 % with a spread of 0.65 %, against a reference
-spread of 1.9 % in the SAM fields, so magnitudes are not yet comparable.)
+Online chamber: mean supersaturation +1.4 %, Lagrangian spread 1.6–1.8 %, correlation time
+3.7–3.9 s. Replay through the reference fields: +0.63 %, 1.85–1.96 %, 2.9–3.1 s. Activated
+fraction after 60 s (fluctuating / uniform / instantaneous) at a target mean of −1 %:
+0.33–0.42 / 0 / 0.16–0.27 online against 0.355 / 0 / 0.165 in the replay; at 0 %:
+0.80–0.83 / 0 / 0.59–0.63 against 0.85 / 0 / 0.51.
 
-Open items: a stationary chamber and its cloud-free mean supersaturation against the
-reported +2.5 %; a condensation sink (the warm-only one-moment host is wired in; a
-supersaturation-driven chamber scheme is planned in Breeze); the audited wall model in place
-of the constant transfer coefficient; second-order particle advection; checkpointing; and the
-comparison with the reference fields mirrored from the NERSC portal (see `reference/`).
+The wall transfer coefficient is the lever: with the neutral log-law value 6 × 10⁻³ the
+chamber is too dry and too quiet (mean −1.1 %, spread 0.6 %) and the enhancement at −1 % is
+0.06. The reference near-wall cells (bottom 1.2 K above the interior, top 1.1 K below,
+against 0.3 K and 0.2 K in the weak-flux chamber) showed that the SAM wall fluxes are 4–5×
+stronger, consistent with Yang et al. (2022): Monin–Obukhov fluxes on all six walls whose
+magnitude depends on the grid spacing (see `reference/audit.md`).
+
+Open items: the cloud-free mean supersaturation (+1.4 % against the reported +2.5 %; a
+4 × 10⁻² run brackets it); the cloudy chamber at the calibrated coefficient (the warm-only
+one-moment host is wired in; a supersaturation-driven chamber scheme is planned in Breeze);
+the correlation-time definition (Anderson reports 7.5 s); second-order particle advection;
+checkpointing; and the resolution ladder.
 
 ## Installing
 
