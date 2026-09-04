@@ -15,8 +15,9 @@ prefix = length(ARGS) ≥ 7 ? ARGS[7] : "windows"
 window = 60.0
 arch = CUDA.functional() ? GPU() : CPU()
 
-# WALL_C overrides the bulk transfer coefficient of the wall laws (default 6e-3)
-chamber = PiChamber(; transfer_coefficient=parse(Float64, get(ENV, "WALL_C", "6e-3")))
+# WALL_C overrides the bulk transfer coefficient of the wall laws; DT the time step (0.02 s)
+chamber = PiChamber(; transfer_coefficient=parse(Float64, get(ENV, "WALL_C", string(PiChamber().transfer_coefficient))))
+Δt = parse(Float64, get(ENV, "DT", "0.02"))
 grid = pi_chamber_grid(chamber, arch; size=(Nx, Ny, Nz))
 aerosol = anderson_aerosol()
 targets = anderson_targets()
@@ -45,7 +46,7 @@ function progress(sim)
 end
 
 # Spin-up
-simulation = Simulation(model; Δt=0.02, stop_time=spinup_minutes * minutes)
+simulation = Simulation(model; Δt, stop_time=spinup_minutes * minutes)
 Oceananigans.Diagnostics.erroring_NaNChecker!(simulation)
 add_callback!(simulation, progress, TimeInterval(30))
 T = model.temperature

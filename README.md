@@ -45,6 +45,11 @@ against 0.3 K and 0.2 K in the weak-flux chamber) showed that the SAM wall fluxe
 stronger, consistent with Yang et al. (2022): Monin–Obukhov fluxes on all six walls whose
 magnitude depends on the grid spacing (see `reference/audit.md`).
 
+The sweep brackets the coefficient: 6 × 10⁻³ is far too weak, 4 × 10⁻² too strong (spread
+2.7–3.0 %, enhancement at −1 % of 0.60–0.63), and 2 × 10⁻² is the `PiChamber` default.
+
+![Coefficient sweep against the reference replay](figures/coefficient_sweep_activation.png)
+
 Open items: the cloud-free mean supersaturation (+1.4 % against the reported +2.5 %; a
 4 × 10⁻² run brackets it); the cloudy chamber at the calibrated coefficient (the warm-only
 one-moment host is wired in; a supersaturation-driven chamber scheme is planned in Breeze);

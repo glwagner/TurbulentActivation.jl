@@ -15,8 +15,13 @@ The chamber configuration. Lengths in metres, temperatures in kelvin, pressure i
   the floor and ceiling are water-saturated
 - `surface_pressure`: chamber pressure (101325)
 - `reference_potential_temperature`: potential temperature of the anelastic reference state (290)
-- `transfer_coefficient`: bulk transfer coefficient of the wall laws (6e-3, a neutral log law with
-  the first cell centre 1.6 cm from the wall and a 0.1 mm roughness length; to be audited)
+- `transfer_coefficient`: bulk transfer coefficient of the wall laws (2e-2). Calibrated against the
+  replay of Anderson's experiment through the reference SAM fields at 64 × 64 × 32: the neutral
+  log-law value 6e-3 (first cell centre 1.6 cm from the wall, 0.1 mm roughness) gives a chamber
+  whose supersaturation fluctuations are three times too weak, 4e-2 gives fluctuations 50 % too
+  strong, and 2e-2 reproduces the reference activation curves to within window scatter
+  (`analysis/coefficient_sweep.jl`). The reference itself uses Monin–Obukhov fluxes whose
+  magnitude depends on the grid spacing (Yang et al. 2022), so the value belongs to this grid.
 - `advection_order`: order of the WENO advection of the implicit LES (9)
 """
 struct PiChamber{FT}
@@ -39,7 +44,7 @@ function PiChamber(FT = Float64;
                    side_relative_humidity = 0.78,
                    surface_pressure = 101325,
                    reference_potential_temperature = 290,
-                   transfer_coefficient = 6e-3,
+                   transfer_coefficient = 2e-2,
                    advection_order = 9)
 
     return PiChamber{FT}(FT.(extent), bottom_temperature, top_temperature, side_temperature,
