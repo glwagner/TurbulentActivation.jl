@@ -22,6 +22,9 @@ The chamber configuration. Lengths in metres, temperatures in kelvin, pressure i
   strong, and 2e-2 reproduces the reference activation curves to within window scatter
   (`analysis/coefficient_sweep.jl`). The reference itself uses Monin–Obukhov fluxes whose
   magnitude depends on the grid spacing (Yang et al. 2022), so the value belongs to this grid.
+- `side_transfer_coefficient`: the coefficient on the four side walls (default: the same). SAM's
+  Monin–Obukhov coefficients are enhanced on the unstable floor and ceiling and neutral on the
+  side walls, so a smaller side coefficient mimics that partition.
 - `advection_order`: order of the WENO advection of the implicit LES (9)
 """
 struct PiChamber{FT}
@@ -33,6 +36,7 @@ struct PiChamber{FT}
     surface_pressure :: FT
     reference_potential_temperature :: FT
     transfer_coefficient :: FT
+    side_transfer_coefficient :: FT
     advection_order :: Int
 end
 
@@ -45,17 +49,19 @@ function PiChamber(FT = Float64;
                    surface_pressure = 101325,
                    reference_potential_temperature = 290,
                    transfer_coefficient = 2e-2,
+                   side_transfer_coefficient = transfer_coefficient,
                    advection_order = 9)
 
     return PiChamber{FT}(FT.(extent), bottom_temperature, top_temperature, side_temperature,
                          side_relative_humidity, surface_pressure, reference_potential_temperature,
-                         transfer_coefficient, advection_order)
+                         transfer_coefficient, side_transfer_coefficient, advection_order)
 end
 
 Base.summary(chamber::PiChamber{FT}) where FT =
     string("PiChamber{", FT, "}(", join(chamber.extent, " × "), " m, floor ", chamber.bottom_temperature,
            " K, ceiling ", chamber.top_temperature, " K, walls ", chamber.side_temperature, " K at ",
-           100 * chamber.side_relative_humidity, " %)")
+           100 * chamber.side_relative_humidity, " %, C = ", chamber.transfer_coefficient, " / ",
+           chamber.side_transfer_coefficient, ")")
 
 Base.show(io::IO, chamber::PiChamber) = print(io, summary(chamber))
 
@@ -81,24 +87,25 @@ wall temperatures and humidities of the chamber.
 """
 function pi_chamber_boundary_conditions(chamber::PiChamber)
     C = chamber.transfer_coefficient
+    Cₛ = chamber.side_transfer_coefficient
     T_bottom = chamber.bottom_temperature
     T_top = chamber.top_temperature
     T_side = chamber.side_temperature
     ℋ_side = chamber.side_relative_humidity
 
-    drag(T) = BulkDrag(coefficient=C, surface_temperature=T)
-    heat(T) = BulkSensibleHeatFlux(coefficient=C, surface_temperature=T)
-    vapor(T, ℋ) = BulkVaporFlux(coefficient=C, surface_temperature=T, surface_relative_humidity=ℋ)
+    drag(T, C) = BulkDrag(coefficient=C, surface_temperature=T)
+    heat(T, C) = BulkSensibleHeatFlux(coefficient=C, surface_temperature=T)
+    vapor(T, ℋ, C) = BulkVaporFlux(coefficient=C, surface_temperature=T, surface_relative_humidity=ℋ)
 
     return (;
-        ρu = FieldBoundaryConditions(bottom=drag(T_bottom), top=drag(T_top), south=drag(T_side), north=drag(T_side)),
-        ρv = FieldBoundaryConditions(bottom=drag(T_bottom), top=drag(T_top), west=drag(T_side), east=drag(T_side)),
-        ρw = FieldBoundaryConditions(west=drag(T_side), east=drag(T_side), south=drag(T_side), north=drag(T_side)),
-        ρθ = FieldBoundaryConditions(bottom=heat(T_bottom), top=heat(T_top),
-                                     west=heat(T_side), east=heat(T_side), south=heat(T_side), north=heat(T_side)),
-        ρqᵛ = FieldBoundaryConditions(bottom=vapor(T_bottom, 1), top=vapor(T_top, 1),
-                                      west=vapor(T_side, ℋ_side), east=vapor(T_side, ℋ_side),
-                                      south=vapor(T_side, ℋ_side), north=vapor(T_side, ℋ_side)))
+        ρu = FieldBoundaryConditions(bottom=drag(T_bottom, C), top=drag(T_top, C), south=drag(T_side, Cₛ), north=drag(T_side, Cₛ)),
+        ρv = FieldBoundaryConditions(bottom=drag(T_bottom, C), top=drag(T_top, C), west=drag(T_side, Cₛ), east=drag(T_side, Cₛ)),
+        ρw = FieldBoundaryConditions(west=drag(T_side, Cₛ), east=drag(T_side, Cₛ), south=drag(T_side, Cₛ), north=drag(T_side, Cₛ)),
+        ρθ = FieldBoundaryConditions(bottom=heat(T_bottom, C), top=heat(T_top, C),
+                                     west=heat(T_side, Cₛ), east=heat(T_side, Cₛ), south=heat(T_side, Cₛ), north=heat(T_side, Cₛ)),
+        ρqᵛ = FieldBoundaryConditions(bottom=vapor(T_bottom, 1, C), top=vapor(T_top, 1, C),
+                                      west=vapor(T_side, ℋ_side, Cₛ), east=vapor(T_side, ℋ_side, Cₛ),
+                                      south=vapor(T_side, ℋ_side, Cₛ), north=vapor(T_side, ℋ_side, Cₛ)))
 end
 
 """

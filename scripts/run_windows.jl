@@ -15,8 +15,11 @@ prefix = length(ARGS) ≥ 7 ? ARGS[7] : "windows"
 window = 60.0
 arch = CUDA.functional() ? GPU() : CPU()
 
-# WALL_C overrides the bulk transfer coefficient of the wall laws; DT the time step (0.02 s)
-chamber = PiChamber(; transfer_coefficient=parse(Float64, get(ENV, "WALL_C", string(PiChamber().transfer_coefficient))))
+# WALL_C overrides the bulk transfer coefficient of the wall laws (WALL_C_SIDE that of the side walls);
+# DT the time step (0.02 s)
+transfer_coefficient = parse(Float64, get(ENV, "WALL_C", string(PiChamber().transfer_coefficient)))
+side_transfer_coefficient = parse(Float64, get(ENV, "WALL_C_SIDE", string(transfer_coefficient)))
+chamber = PiChamber(; transfer_coefficient, side_transfer_coefficient)
 Δt = parse(Float64, get(ENV, "DT", "0.02"))
 grid = pi_chamber_grid(chamber, arch; size=(Nx, Ny, Nz))
 aerosol = anderson_aerosol()
