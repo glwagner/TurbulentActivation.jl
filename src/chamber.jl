@@ -169,3 +169,58 @@ function chamber_microphysics(FT = Float64; relaxation_time = 5)
     negative_moisture_correction = SpeciesBorrowing()
     return ext.OneMomentCloudMicrophysics(FT; cloud_formation, categories, negative_moisture_correction)
 end
+
+#####
+##### Chamber statistics: the Eulerian state of the chamber, to compare with the reference LES
+#####
+
+wall_cells(A, ::Val{:bottom}) = view(A, :, :, 1)
+wall_cells(A, ::Val{:top}) = view(A, :, :, size(A, 3))
+wall_cells(A, ::Val{:west}) = view(A, 1, :, :)
+wall_cells(A, ::Val{:east}) = view(A, size(A, 1), :, :)
+wall_cells(A, ::Val{:south}) = view(A, :, 1, :)
+wall_cells(A, ::Val{:north}) = view(A, :, size(A, 2), :)
+
+"""
+    chamber_statistics(model)
+
+Volume statistics of the chamber's Eulerian state: the mean and standard deviation of the
+temperature `T`, vapor mass fraction `qᵛ`, and supersaturation `𝒮` over the whole volume and
+over the interior (two cells away from every wall), the mean `T`, `qᵛ`, and `𝒮` of the cells
+adjacent to each of the six walls, and the root-mean-square velocity components. The
+supersaturation is the model's own, `𝒮 = ℋ − 1` with `ℋ` the [`RelativeHumidityField`](@ref).
+"""
+function chamber_statistics(model)
+    T = Array(interior(model.temperature))
+    qᵛ = Array(interior(model.microphysical_fields.qᵛ))
+    ℋ = RelativeHumidityField(model); compute!(ℋ)
+    𝒮 = Array(interior(ℋ)) .- 1
+    u, v, w = model.velocities
+    Nx, Ny, Nz = size(model.grid)
+    inner = (3:Nx-2, 3:Ny-2, 3:Nz-2)
+    stats(A) = (mean = mean(A), std = std(A))
+    walls = (:bottom, :top, :west, :east, :south, :north)
+    near_wall = NamedTuple{walls}(map(w -> (T = mean(wall_cells(T, Val(w))), qᵛ = mean(wall_cells(qᵛ, Val(w))), 𝒮 = mean(wall_cells(𝒮, Val(w)))), walls))
+    return (; T = stats(T), qᵛ = stats(qᵛ), 𝒮 = stats(𝒮),
+              interior = (T = stats(view(T, inner...)), qᵛ = stats(view(qᵛ, inner...)), 𝒮 = stats(view(𝒮, inner...))),
+              near_wall,
+              rms_velocity = (u = sqrt(mean(Array(interior(u)).^2)), v = sqrt(mean(Array(interior(v)).^2)), w = sqrt(mean(Array(interior(w)).^2))))
+end
+
+"""
+    print_chamber_statistics([io], statistics)
+
+Print [`chamber_statistics`](@ref) in the layout of the reference table (`reference/README.md`).
+"""
+function print_chamber_statistics(io::IO, s)
+    @printf(io, "chamber state: ⟨T⟩ = %.3f K  σ(T) = %.3f K  ⟨qᵛ⟩ = %.3f g/kg  σ(qᵛ) = %.3f g/kg  ⟨𝒮⟩ = %+.3f %%  σ(𝒮) = %.3f %%\n",
+            s.T.mean, s.T.std, 1000s.qᵛ.mean, 1000s.qᵛ.std, 100s.𝒮.mean, 100s.𝒮.std)
+    @printf(io, "  interior:    ⟨T⟩ = %.3f K  σ(T) = %.3f K  ⟨qᵛ⟩ = %.3f g/kg  σ(qᵛ) = %.3f g/kg  ⟨𝒮⟩ = %+.3f %%  σ(𝒮) = %.3f %%\n",
+            s.interior.T.mean, s.interior.T.std, 1000s.interior.qᵛ.mean, 1000s.interior.qᵛ.std, 100s.interior.𝒮.mean, 100s.interior.𝒮.std)
+    for w in keys(s.near_wall)
+        n = s.near_wall[w]
+        @printf(io, "  %-7s cell: T = %.3f K  qᵛ = %.3f g/kg  𝒮 = %+.3f %%\n", w, n.T, 1000n.qᵛ, 100n.𝒮)
+    end
+    @printf(io, "  rms velocity: u = %.3f  v = %.3f  w = %.3f m/s\n", s.rms_velocity.u, s.rms_velocity.v, s.rms_velocity.w)
+end
+print_chamber_statistics(s) = print_chamber_statistics(stdout, s)

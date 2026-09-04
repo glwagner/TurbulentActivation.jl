@@ -58,6 +58,8 @@ simulation.output_writers[:profiles] = JLD2Writer(model, (; T=Average(T, dims=(1
                                                           vv=Average(@at((Center, Center, Center), v^2), dims=(1, 2)));
                                                   filename="$(prefix)_profiles.jld2", schedule=TimeInterval(5), overwrite_existing=true)
 run!(simulation)
+state = chamber_statistics(model)
+print_chamber_statistics(state)
 
 # Windows
 results = Dict{String, Any}("targets" => collect(targets), "window" => window, "N" => N, "size" => (Nx, Ny, Nz))
@@ -83,8 +85,11 @@ for n in 1:n_windows
     delete!(simulation.callbacks, :record)
     delete!(simulation.callbacks, :sample)
     a = replica_activation(droplets)
+    state = chamber_statistics(model)
+    print_chamber_statistics(state)
     results["window_$n"] = Dict("start" => t₀, "S0" => 𝒮₀, "fluctuating" => collect(a.fluctuating),
-                                "uniform" => collect(a.uniform), "instantaneous" => collect(a.instantaneous))
+                                "uniform" => collect(a.uniform), "instantaneous" => collect(a.instantaneous),
+                                "state" => state)
     series["window_$n"] = Dict("times" => times, "fluctuating" => reduce(hcat, fluc), "uniform" => reduce(hcat, unif), "instantaneous" => reduce(hcat, inst),
                                "sample_times" => sample_times, "S" => reduce(hcat, 𝒮_samples), "D" => reduce(hcat, D_samples))
     @printf("window %d done: target  fluctuating  uniform  instantaneous\n", n)
