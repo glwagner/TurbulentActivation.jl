@@ -16,10 +16,17 @@ window = 60.0
 arch = CUDA.functional() ? GPU() : CPU()
 
 # WALL_C overrides the bulk transfer coefficient of the wall laws (WALL_C_SIDE that of the side walls);
-# DT the time step (0.02 s)
-transfer_coefficient = parse(Float64, get(ENV, "WALL_C", string(PiChamber().transfer_coefficient)))
-side_transfer_coefficient = parse(Float64, get(ENV, "WALL_C_SIDE", string(transfer_coefficient)))
-chamber = PiChamber(; transfer_coefficient, side_transfer_coefficient)
+# WALL_MODEL=loglaw uses the log-law wall model with roughness length ROUGHNESS (m) and the
+# Monin–Obukhov stability correction unless STABILITY=0; DT the time step (0.02 s)
+if get(ENV, "WALL_MODEL", "constant") == "loglaw"
+    coefficient = log_law_coefficient(; roughness_length=parse(Float64, get(ENV, "ROUGHNESS", "1e-3")),
+                                        stability=get(ENV, "STABILITY", "1") == "1")
+    chamber = PiChamber(; transfer_coefficient=coefficient, side_transfer_coefficient=coefficient)
+else
+    transfer_coefficient = parse(Float64, get(ENV, "WALL_C", string(PiChamber().transfer_coefficient)))
+    side_transfer_coefficient = parse(Float64, get(ENV, "WALL_C_SIDE", string(transfer_coefficient)))
+    chamber = PiChamber(; transfer_coefficient, side_transfer_coefficient)
+end
 Δt = parse(Float64, get(ENV, "DT", "0.02"))
 grid = pi_chamber_grid(chamber, arch; size=(Nx, Ny, Nz))
 aerosol = anderson_aerosol()
@@ -60,6 +67,15 @@ if get(ENV, "DIAG", "0") == "1"
                         time(sim), minimum(T), maximum(T), maximum(abs, u), maximum(abs, v), maximum(abs, w),
                         isnothing(qᶜˡ) ? 0 : minimum(qᶜˡ), isnothing(qᶜˡ) ? 0 : maximum(qᶜˡ), minimum(model.microphysical_fields.qᵛ))
     add_callback!(simulation, diag, TimeInterval(1))
+    # droplet extrema: a garbage interpolation or a runaway position shows up here first
+    function droplet_diag(sim)
+        x, y, z = Array(droplets.x), Array(droplets.y), Array(droplets.z)
+        Td, pd, D² = Array(droplets.T), Array(droplets.p), Array(droplets.D²)
+        @printf("      droplets: x ∈ [%.3f, %.3f]  y ∈ [%.3f, %.3f]  z ∈ [%.3f, %.3f]  T ∈ [%.2f, %.2f]  p ∈ [%.0f, %.0f]  D² ∈ [%.2e, %.2e]  NaN: %d\n",
+                minimum(x), maximum(x), minimum(y), maximum(y), minimum(z), maximum(z), minimum(Td), maximum(Td),
+                minimum(pd), maximum(pd), minimum(D²), maximum(D²), count(isnan, x) + count(isnan, Td) + count(isnan, D²))
+    end
+    add_callback!(simulation, droplet_diag, TimeInterval(1))
 end
 T = model.temperature
 qᵛ = model.microphysical_fields.qᵛ

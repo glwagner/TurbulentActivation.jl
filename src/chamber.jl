@@ -27,7 +27,7 @@ The chamber configuration. Lengths in metres, temperatures in kelvin, pressure i
   side walls, so a smaller side coefficient mimics that partition.
 - `advection_order`: order of the WENO advection of the implicit LES (9)
 """
-struct PiChamber{FT}
+struct PiChamber{FT, C, CS}
     extent :: NTuple{3, FT}
     bottom_temperature :: FT
     top_temperature :: FT
@@ -35,8 +35,8 @@ struct PiChamber{FT}
     side_relative_humidity :: FT
     surface_pressure :: FT
     reference_potential_temperature :: FT
-    transfer_coefficient :: FT
-    side_transfer_coefficient :: FT
+    transfer_coefficient :: C
+    side_transfer_coefficient :: CS
     advection_order :: Int
 end
 
@@ -52,16 +52,42 @@ function PiChamber(FT = Float64;
                    side_transfer_coefficient = transfer_coefficient,
                    advection_order = 9)
 
-    return PiChamber{FT}(FT.(extent), bottom_temperature, top_temperature, side_temperature,
-                         side_relative_humidity, surface_pressure, reference_potential_temperature,
-                         transfer_coefficient, side_transfer_coefficient, advection_order)
+    C = transfer_coefficient isa Number ? FT(transfer_coefficient) : transfer_coefficient
+    Cₛ = side_transfer_coefficient isa Number ? FT(side_transfer_coefficient) : side_transfer_coefficient
+    return PiChamber{FT, typeof(C), typeof(Cₛ)}(FT.(extent), bottom_temperature, top_temperature, side_temperature,
+                                                side_relative_humidity, surface_pressure, reference_potential_temperature,
+                                                C, Cₛ, advection_order)
 end
+
+coefficient_summary(C::Number) = string(C)
+coefficient_summary(C) = string(nameof(typeof(C)), "(ℓ = ", C.roughness_length, " m)")
 
 Base.summary(chamber::PiChamber{FT}) where FT =
     string("PiChamber{", FT, "}(", join(chamber.extent, " × "), " m, floor ", chamber.bottom_temperature,
            " K, ceiling ", chamber.top_temperature, " K, walls ", chamber.side_temperature, " K at ",
-           100 * chamber.side_relative_humidity, " %, C = ", chamber.transfer_coefficient, " / ",
-           chamber.side_transfer_coefficient, ")")
+           100 * chamber.side_relative_humidity, " %, C = ", coefficient_summary(chamber.transfer_coefficient), " / ",
+           coefficient_summary(chamber.side_transfer_coefficient), ")")
+
+"""
+    log_law_coefficient(FT = Float64; roughness_length = 1e-3, scalar_roughness_length = roughness_length / 7.3,
+                        stability = true, minimum_wind_speed = 0.05)
+
+A wall law in the form of Breeze's `PolynomialCoefficient`: the neutral coefficient is the
+log law `κ² / ln(h / ℓ)²` at the wall distance `h` of the first cell centre (entered through
+the 10 m polynomial as a constant, which Breeze transfers to `h` with the same log law), and
+on the floor and ceiling the Monin–Obukhov stability correction of `FittedStabilityFunction`
+enhances it where the wall layer is unstable, while the side walls stay neutral. With
+`ℓ = 1 mm` and 3.1 cm cells the neutral value is 2.1e-2, the calibrated constant.
+"""
+function log_law_coefficient(FT = Float64; roughness_length = 1e-3, scalar_roughness_length = roughness_length / 7.3,
+                             stability = true, minimum_wind_speed = 0.05)
+    ℓ = FT(roughness_length)
+    κ = FT(0.4)
+    a₀ = 1000 * κ^2 / log(10 / ℓ)^2          # neutral_coefficient_10m = (a₀ + a₁ U + a₂ / U) × 1e-3
+    stability_function = stability ? FittedStabilityFunction(FT(scalar_roughness_length)) : nothing
+    return PolynomialCoefficient(FT; polynomial=(a₀, zero(FT), zero(FT)), roughness_length=ℓ,
+                                 minimum_wind_speed=FT(minimum_wind_speed), stability_function)
+end
 
 Base.show(io::IO, chamber::PiChamber) = print(io, summary(chamber))
 
