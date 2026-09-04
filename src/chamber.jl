@@ -131,3 +131,38 @@ function initialize_chamber!(model, chamber::PiChamber{FT};
     set!(model; T=Tᵢ, ℋ=FT(relative_humidity))
     return nothing
 end
+
+#####
+##### Host microphysics
+#####
+
+"""
+    chamber_microphysics(FT = Float64; relaxation_time = 5)
+
+A warm-only bulk host microphysics for the cloudy chamber: Breeze's one-moment scheme with
+prognostic vapor, cloud liquid formed by relaxation toward saturation on `relaxation_time`
+(seconds), and every rain process switched off, so that the supersaturation is regulated by
+condensation on the cloud but no drizzle forms. The relaxation time stands in for the phase
+relaxation time of the droplet population, `1 / (4π Dᵛ N r̄)`; it is a sensitivity parameter
+until a supersaturation-driven chamber scheme replaces it.
+"""
+function chamber_microphysics(FT = Float64; relaxation_time = 5)
+    ext = Base.get_extension(Breeze, :BreezeCloudMicrophysicsExt)
+    parameters = Microphysics1MParams(FT;
+                                      rain_autoconversion = nothing,
+                                      rain_condensation_evaporation = nothing,
+                                      cloud_liquid_rain_accretion = nothing,
+                                      cloud_ice_formation = nothing,
+                                      cloud_ice_melt = nothing,
+                                      snow_autoconversion = nothing,
+                                      snow_deposition_sublimation = nothing,
+                                      snow_melt = nothing,
+                                      cloud_liquid_snow_accretion = nothing,
+                                      cloud_ice_rain_accretion = nothing,
+                                      cloud_ice_snow_accretion = nothing,
+                                      rain_snow_accretion = nothing)
+    categories = ext.one_moment_cloud_microphysics_categories(FT; parameters)
+    liquid = ConstantRateCondensateFormation(FT(1 / relaxation_time))
+    cloud_formation = NonEquilibriumCloudFormation(liquid, nothing)
+    return ext.OneMomentCloudMicrophysics(FT; cloud_formation, categories)
+end

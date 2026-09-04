@@ -7,6 +7,7 @@ version = "0.1.0"
 Breeze = "660aa2fb-d4c8-4359-a52c-9c057bc511da"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+CloudMicrophysics = "6a9e3e04-43cd-43ba-94b9-e8782df3c71b"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
@@ -26,6 +27,7 @@ test = ["Test"]
 
 [compat]
 CUDA = "5, ~6.0, 6.2"
+CloudMicrophysics = "0.38"
 JLD2 = "0.5, 0.6"
 Oceananigans = "0.111"
 StructArrays = "0.6, 0.7"

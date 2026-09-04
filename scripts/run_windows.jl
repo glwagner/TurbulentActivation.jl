@@ -25,9 +25,12 @@ rng = MersenneTwister(1234)
 droplets = seed_replica_droplets(aerosol, grid, N, targets; temperature, supersaturation=relative_humidity - 1, rng)
 dynamics = ReplicaDynamics(targets)
 particles = LagrangianParticles(droplets; dynamics)
-model = pi_chamber_model(chamber, grid; particles)
+# HOST=bulk runs the cloudy chamber with the warm-only one-moment host (relaxation time HOST_TAU s)
+host = get(ENV, "HOST", "none")
+microphysics = host == "bulk" ? chamber_microphysics(; relaxation_time=parse(Float64, get(ENV, "HOST_TAU", "5"))) : nothing
+model = pi_chamber_model(chamber, grid; particles, microphysics)
 initialize_chamber!(model, chamber; temperature, relative_humidity)
-@info "Anderson windows" chamber aerosol dynamics arch size=(Nx, Ny, Nz) spinup_minutes n_windows N
+@info "Anderson windows" chamber aerosol dynamics host arch size=(Nx, Ny, Nz) spinup_minutes n_windows N
 
 ℋ = RelativeHumidityField(model)
 u, v, w = model.velocities
