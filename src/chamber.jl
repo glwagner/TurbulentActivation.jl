@@ -88,7 +88,7 @@ function log_law_coefficient(FT = Float64; roughness_length = 1.25e-3, scalar_ro
                              stability = true, minimum_wind_speed = 0.05)
     ℓ = FT(roughness_length)
     κ = FT(0.4)
-    a₀ = 1000 * κ^2 / log(10 / ℓ)^2          # neutral_coefficient_10m = (a₀ + a₁ U + a₂ / U) × 1e-3
+    a₀ = κ^2 / log(10 / ℓ)^2                 # neutral_coefficient_10m = a₀ + a₁ U + a₂ / U
     stability_function = stability ? FittedStabilityFunction(FT(scalar_roughness_length)) : nothing
     return PolynomialCoefficient(FT; polynomial=(a₀, zero(FT), zero(FT)), roughness_length=ℓ,
                                  minimum_wind_speed=FT(minimum_wind_speed), stability_function)
