@@ -16,13 +16,13 @@ The chamber configuration. Lengths in metres, temperatures in kelvin, pressure i
 - `surface_pressure`: chamber pressure (100000, the pressure of the reference SAM fields)
 - `reference_potential_temperature`: potential temperature of the anelastic reference state (290)
 - `transfer_coefficient`: the wall law, a number (a constant bulk coefficient) or a Breeze
-  `PolynomialCoefficient`. The default is [`log_law_coefficient`](@ref) with a 1.25 mm roughness
-  length: the neutral log-law coefficient at the first cell centre (2.5e-2 for 3.1 cm cells)
+  `PolynomialCoefficient`. The default is [`log_law_coefficient`](@ref) with a 1.4 mm roughness
+  length: the neutral log-law coefficient at the first cell centre (2.6e-2 for 3.1 cm cells)
   with the Monin–Obukhov stability enhancement on the floor and ceiling and neutral side
   walls. Calibrated against the replay of Anderson's experiment through the reference SAM
   fields (`analysis/`): a constant 6e-3 gives fluctuations three times too weak, a constant
   2e-2 reproduces the fluctuations but leaves the mean supersaturation near zero, and with
-  bounds-preserving WENO(5) the 1.25 mm log law reproduces the interior and Lagrangian spread,
+  bounds-preserving WENO(5) the 1.4 mm log law reproduces the interior and Lagrangian spread,
   the correlation time, and the activation curve, with a 1 K warm bias of the mean temperature
   and a mean supersaturation of +0.2 % against +0.7 %.
 - `side_transfer_coefficient`: the coefficient on the four side walls (default: the same). SAM's
@@ -73,7 +73,7 @@ Base.summary(chamber::PiChamber{FT}) where FT =
            coefficient_summary(chamber.side_transfer_coefficient), ")")
 
 """
-    log_law_coefficient(FT = Float64; roughness_length = 1.25e-3, scalar_roughness_length = roughness_length / 7.3,
+    log_law_coefficient(FT = Float64; roughness_length = 1.4e-3, scalar_roughness_length = roughness_length / 7.3,
                         stability = true, minimum_wind_speed = 0.05)
 
 A wall law in the form of Breeze's `PolynomialCoefficient`: the neutral coefficient is the
@@ -81,10 +81,10 @@ log law `κ² / ln(h / ℓ)²` at the wall distance `h` of the first cell centre
 the 10 m polynomial as a constant, which Breeze transfers to `h` with the same log law), and
 on the floor and ceiling the Monin–Obukhov stability correction of `FittedStabilityFunction`
 enhances it where the wall layer is unstable, while the side walls stay neutral. With
-`ℓ = 1.25 mm` and 3.1 cm cells the neutral value is 2.5e-2; this roughness reproduces the
+`ℓ = 1.4 mm` and 3.1 cm cells the neutral value is 2.6e-2; this roughness reproduces the
 reference SAM fields' supersaturation statistics and activation curve with WENO(5).
 """
-function log_law_coefficient(FT = Float64; roughness_length = 1.25e-3, scalar_roughness_length = roughness_length / 7.3,
+function log_law_coefficient(FT = Float64; roughness_length = 1.4e-3, scalar_roughness_length = roughness_length / 7.3,
                              stability = true, minimum_wind_speed = 0.05)
     ℓ = FT(roughness_length)
     κ = FT(0.4)
