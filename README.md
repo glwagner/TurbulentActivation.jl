@@ -52,38 +52,45 @@ crossing, so the curve is insensitive to it.
 
 ### The chamber against the replay
 
-Two quantities were calibrated from the reference fields themselves: the condensation rate in
+Three quantities were calibrated from the reference fields themselves. The condensation rate in
 the SAM snapshots gives a phase relaxation time of 72 s (`analysis/reference_condensation.jl`),
-which the warm-only one-moment host reproduces with `relaxation_time = 28` (Breeze's rate
-carries the latent-heat factor Γ ≈ 2.5); and the wall model is a log law with the
-Monin–Obukhov stability correction on the floor and ceiling and neutral side walls
-(`log_law_coefficient`), whose 1.4 mm roughness gives, at 64 × 64 × 32 with a 15 min spin-up
-and three 60 s windows:
+which the warm-only one-moment host reproduces with `relaxation_time = 28` (Breeze's rate carries
+the latent-heat factor Γ ≈ 2.5). The wall model is a log law with the Monin–Obukhov stability
+correction on the floor and ceiling and neutral side walls (`log_law_coefficient`), with a
+1.4 mm roughness at the plates. And the side walls, which are the chamber's cold, dry sink, carry
+a 3 mm roughness and a wetness of 0.90: their strength sets the temperature and their wetness sets
+how much vapor leaves with the heat, and the two must move together, because at fixed vapor a 1 K
+warm bias costs 7 % of relative humidity, more than the whole gap in the mean supersaturation.
+
+At 64 × 64 × 32 with a 15 min spin-up and three 60 s windows:
 
 | quantity | Breeze chamber | reference SAM fields |
 |---|---:|---:|
-| Lagrangian spread of 𝒮 along droplets | 1.94–2.00 % | 1.85–1.96 % |
-| spread of 𝒮 over the box | 1.93 % | 1.94 % |
-| interior spread of 𝒮 | 1.17 % | 1.23 % |
-| correlation time τₛ | 2.8–3.1 s | 2.9–3.1 s |
-| σ(T), σ(qᵛ) | 1.03 K, 0.83 g kg⁻¹ | 0.85 K, 0.72 g kg⁻¹ |
-| activated fraction after 60 s at −1 % (fluctuating) | 0.34–0.41 | 0.355 |
-| at 0 % (fluctuating / instantaneous) | 0.84–0.85 / 0.63–0.64 | 0.85 / 0.51 |
-| at −2 % (fluctuating) | 0.087–0.093 | 0.11 |
-| mean 𝒮, interior | −0.03 % | +0.71 % |
-| mean T | 288.7 K | 287.6 K |
+| Lagrangian spread of 𝒮 along droplets | 1.95–2.04 % | 1.85–1.96 % |
+| interior spread of 𝒮 | 1.24 % | 1.23 % |
+| spread of 𝒮 over the box | 2.08 % | 1.94 % |
+| correlation time τₛ | 2.9–3.0 s | 2.9–3.1 s |
+| σ(T), σ(qᵛ) | 0.98 K, 0.81 g kg⁻¹ | 0.85 K, 0.72 g kg⁻¹ |
+| mean 𝒮, interior | +0.65 % | +0.71 % |
+| mean T, mean qᵛ | 288.17 K, 10.74 g kg⁻¹ | 287.62 K, 10.48 g kg⁻¹ |
+| activated fraction after 60 s at −1 % (fluctuating) | 0.40–0.41 | 0.355 |
+| at 0 % (fluctuating / instantaneous) | 0.82–0.83 / 0.63–0.67 | 0.85 / 0.51 |
 
 ![Default chamber against the reference replay](figures/default_chamber_vs_reference_activation.png)
 
-The residuals are a 1 K warm bias and a mean supersaturation near zero where the reference is
-supersaturated, both a flux-partition question between floor, ceiling, and side walls, and the
-far tail below −2 %. The 128 × 128 × 64 chamber reproduces the 64 × 64 × 32 statistics
-(`figures/ladder_activation.png`).
+What remains is a 0.55 K warm bias, a fluctuation amplitude 5–10 % high, and an enhancement at
+−1 % that overshoots by about 0.05. Vertical refinement does not help: at a fixed wall
+coefficient the warm bias barely moves and the chamber only gets quieter, because a thinner
+near-wall cell holds a value closer to the wall's and the bulk flux shrinks with it. The wall
+flux is the lever, not the grid (`figures/resolution_profiles.png`).
 
-Open items: the warm bias and the mean; the far tail; the correlation-time definition
-(Anderson reports 7.5 s where the integral estimator gives 3 s in his own fields); the
-trajectory integration and supersaturation definition against his code, the two parts of the
-replay still untested; second-order particle advection; checkpointing.
+Animations of the fields and of the droplet population are made by `scripts/run_movie.jl` with
+`analysis/make_movie.jl` and `analysis/make_particle_movie.jl`.
+
+Open items: the residual warm bias; the correlation-time definition (Anderson reports 7.5 s where
+the integral estimator gives 3 s in his own fields); the trajectory integration and supersaturation
+definition against his code, the two parts of the replay still untested; second-order particle
+advection; checkpointing.
 
 ## Installing
 

@@ -11,7 +11,11 @@ The chamber configuration. Lengths in metres, temperatures in kelvin, pressure i
 
 - `extent`: the (x, y, z) dimensions of the box (default `(2, 2, 1)`)
 - `bottom_temperature`, `top_temperature`, `side_temperature`: wall temperatures (299, 280, 285)
-- `side_relative_humidity`: relative humidity of the air in contact with the side walls (0.78);
+- `side_relative_humidity`: relative humidity of the air in contact with the side walls (0.90);
+  with the side coefficient below, this is the pair that sets the chamber's mean state: the side
+  walls are its cold, dry sink, so their strength sets the temperature and their wetness sets how
+  much vapor leaves with the heat. Calibrated against the reference fields, which SAM reaches with
+  a wetness of 0.78 under its own Monin–Obukhov fluxes;
   the floor and ceiling are water-saturated
 - `surface_pressure`: chamber pressure (100000, the pressure of the reference SAM fields)
 - `reference_potential_temperature`: potential temperature of the anelastic reference state (290)
@@ -49,11 +53,12 @@ function PiChamber(FT = Float64;
                    bottom_temperature = 299,
                    top_temperature = 280,
                    side_temperature = 285,
-                   side_relative_humidity = 0.78,
+                   side_relative_humidity = 0.90,
                    surface_pressure = 100000,
                    reference_potential_temperature = 290,
                    transfer_coefficient = log_law_coefficient(FT),
-                   side_transfer_coefficient = transfer_coefficient,
+                   side_transfer_coefficient = transfer_coefficient isa Number ? transfer_coefficient :
+                                               log_law_coefficient(FT; roughness_length=3e-3),
                    advection_order = 5)
 
     C = transfer_coefficient isa Number ? FT(transfer_coefficient) : transfer_coefficient
