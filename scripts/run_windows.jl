@@ -25,8 +25,11 @@ if get(ENV, "WALL_MODEL", "loglaw") == "loglaw"
     # ROUGHNESS_SIDE sets the side walls' roughness separately, which changes the partition of the
     # wall fluxes between the plates and the side walls (the lever on the chamber's mean state)
     side_roughness = parse(Float64, get(ENV, "ROUGHNESS_SIDE", string(roughness)))
+    # SIDE_HUMIDITY is the relative humidity of the air in contact with the side walls, the
+    # parameter SAM tunes to set the chamber's mean supersaturation independently of its heat budget
     chamber = PiChamber(; transfer_coefficient=log_law_coefficient(; roughness_length=roughness, stability),
-                          side_transfer_coefficient=log_law_coefficient(; roughness_length=side_roughness, stability))
+                          side_transfer_coefficient=log_law_coefficient(; roughness_length=side_roughness, stability),
+                          side_relative_humidity=parse(Float64, get(ENV, "SIDE_HUMIDITY", "0.78")))
 else
     transfer_coefficient = parse(Float64, get(ENV, "WALL_C", "2e-2"))
     side_transfer_coefficient = parse(Float64, get(ENV, "WALL_C_SIDE", string(transfer_coefficient)))
