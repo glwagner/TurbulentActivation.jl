@@ -15,13 +15,18 @@ prefix = length(ARGS) ≥ 7 ? ARGS[7] : "windows"
 window = 60.0
 arch = CUDA.functional() ? GPU() : CPU()
 
-# WALL_MODEL=loglaw (default) uses the log-law wall model with roughness length ROUGHNESS (1.4e-3 m)
+# WALL_MODEL=loglaw (default) uses the log-law wall model with roughness length ROUGHNESS (1.4e-3 m,
+# ROUGHNESS_SIDE on the side walls)
 # and the Monin–Obukhov stability correction unless STABILITY=0; WALL_MODEL=constant uses the bulk
 # coefficient WALL_C (2e-2) with WALL_C_SIDE on the side walls. DT is the time step (0.02 s).
 if get(ENV, "WALL_MODEL", "loglaw") == "loglaw"
-    coefficient = log_law_coefficient(; roughness_length=parse(Float64, get(ENV, "ROUGHNESS", "1.4e-3")),
-                                        stability=get(ENV, "STABILITY", "1") == "1")
-    chamber = PiChamber(; transfer_coefficient=coefficient, side_transfer_coefficient=coefficient)
+    stability = get(ENV, "STABILITY", "1") == "1"
+    roughness = parse(Float64, get(ENV, "ROUGHNESS", "1.4e-3"))
+    # ROUGHNESS_SIDE sets the side walls' roughness separately, which changes the partition of the
+    # wall fluxes between the plates and the side walls (the lever on the chamber's mean state)
+    side_roughness = parse(Float64, get(ENV, "ROUGHNESS_SIDE", string(roughness)))
+    chamber = PiChamber(; transfer_coefficient=log_law_coefficient(; roughness_length=roughness, stability),
+                          side_transfer_coefficient=log_law_coefficient(; roughness_length=side_roughness, stability))
 else
     transfer_coefficient = parse(Float64, get(ENV, "WALL_C", "2e-2"))
     side_transfer_coefficient = parse(Float64, get(ENV, "WALL_C_SIDE", string(transfer_coefficient)))
